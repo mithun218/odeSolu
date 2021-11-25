@@ -228,7 +228,6 @@ def seriesSolu(_inputDE,_idpdDpdVar,_iniCond,_N):
     
 
     max_xPow = np.max(np.append(DEtoArrayL[:, 1], DEtoArrayNL[:, 1])) # maximum power of independent
-                                                                                               # variable in diff. equ.
     #seriesTermCalALoop = max_xPow + orderDeg[0] # number of series terms calculation in a loop
 
     lastSeriestermPos = orderDeg[0] # last series term position in soluM. At first it is equal to order of diff. equ.. 
