@@ -1,8 +1,7 @@
-# This is a collections of examples to demonstrate how to use odeSolu
+# This is a collections of examples to demonstrate how to use odeSolu, and write the series solutions in the text files.
 
 import odeSolu as os
 from sympy import symbols,Function,diff
-import numpy as np
 
 
 ######## Example 1 (Bernoulli equation) ##################

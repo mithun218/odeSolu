@@ -2,6 +2,7 @@
 import os
 import fnmatch
 import sysconfig
+import re
 
 from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py as _build_py
@@ -44,10 +45,14 @@ def get_ext_paths(root_dir, exclude_files):
             paths.append(file_path)
     return paths
 
+def get_property(prop, project):
+    result = re.search(r'{}\s*=\s*[\'"]([^\'"]*)[\'"]'.format(prop), open(project + '/__init__.py').read())
+    return result.group(1)
 
 setup(
     name='odeSolu',
-    version='1.0.0',
+    #version='1.0.5',
+    version = get_property('__version__', "odeSolu"),
     description='A Python package to get power series solution of a nonlinear ODE ',
     
     packages=find_packages(),
@@ -69,6 +74,7 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'numpy>=1.14.5',
+        'scipy>=1.0.0',
         'sympy>=1.0.0'
     ],
     cmdclass={

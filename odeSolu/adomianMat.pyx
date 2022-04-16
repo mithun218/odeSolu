@@ -2,6 +2,8 @@
 # cython: language_level=3, boundscheck=False
 
 import numpy as np
+import numpy.polynomial.polynomial as nppoly
+from scipy.integrate import quad
 
 cpdef long int factorial(long int n):
     return np.prod(range(1,n+1))
@@ -13,7 +15,7 @@ cdef class adomianMat:
         long int j,k,l,m,N,DEtoArrayLLen,DEtoArrayLtermLen,DEtoArrayNLLen,iniCondLen,lastSeriestermPos,orderDegz,lastCalTerm,lastTermInr
         bint isBefrAssn
         
-        #Using memoryviews#
+        ## Using memoryviews ##
         double[:] emptyNDM
         double[:] emptyNAM1
         double[:] emptyNAM2
@@ -53,71 +55,72 @@ cdef class adomianMat:
 
         self.derivM = np.array(range(_N),dtype=np.double)
         self.integM = 1./(np.array(range(1,(_N+1)),dtype=np.double))
-        self.integM[-1] = 0 # last elements are assigned to 0 for avoiding large number multipication        
+        self.integM[-1] = 0 # Last elements are assigned to 0 for avoiding large number multipication.       
 
 
-    cdef double[:] doDerivM(self,double[:] matIn, double _Nt): # _Nt times differentiation
+    cdef double[:] doDerivM(self,double[:] matIn, double _Nt): # _Nt times differentiation.
         for self.l in range(int(_Nt)):
             matIn = np.roll(np.multiply(self.derivM, matIn), -1)
         return matIn
     
-    cdef double[:] doIntegM(self,double[:] matIn,long int _Nt): # _Nt times integration
+    cdef double[:] doIntegM(self,double[:] matIn,long int _Nt): # _Nt times integration.
         for self.l in range(1, _Nt+1): 
             matIn = np.roll(np.multiply(self.integM, matIn), 1)
         return matIn
     
-    cdef double[:] adomianMuN(self,double[:] _soluM, double _Nt): # this will create adomian matrix of _soluM^(_Nt-1) for the matrix elements
-        self.emptyNAM1[:] = _soluM     # after the element position lastSeriestermPos
+    cdef double[:] adomianMuN(self,double[:] _soluM, double _Nt): # This will create adomian matrix of _soluM^(_Nt-1) 
+                                                                  # for the matrix elements
+        self.emptyNAM1[:] = _soluM                                # after the element position lastSeriestermPos.
         for self.m in range(int(_Nt)-2):
             for self.l in range(self.lastSeriestermPos-self.orderDegz+1,-1,-1):
                 self.emptyNAM1[self.l] = np.multiply(_soluM[:(self.l+1)],np.array([np.flip(self.emptyNAM1[:(self.l+1)])])).sum()
         return self.emptyNAM1
 
-    cdef double[:] adomianU1U2(self,double[:] U1,double[:] U2): # this will create adomian matrix between the matrix U1 and U2
+    cdef double[:] adomianU1U2(self,double[:] U1,double[:] U2): # This will create adomian matrix between the matrix U1 and U2.
         np.asarray(self.emptyNAM2).fill(0)
         for self.l in range(self.lastSeriestermPos-self.orderDegz+1,-1,-1):
             self.emptyNAM2[self.l] = np.multiply(U1[:(self.l+1)],np.array([np.flip(U2[:(self.l+1)])])).sum()
         return self.emptyNAM2 
     
     cpdef seriesTerms(self):
-        '''initializetion (here we use self.orderDegz in place of seriesTermCalALoop in first term calculation in series)'''
-        #N = 40
-        #self.soluM = np.array([ 1.,  1 ,0.5 ,0, 0,0,0])
-        # Calculating series terms from linear part (self.DEtoArrayL) in r.h.s. (We need not to calculate Adomian Matrix)
+
+        ## Calculating series terms from linear part (self.DEtoArrayL) in r.h.s. (We need not to calculate Adomian Matrix) ##
         np.asarray(self.zeroMNAddclt).fill(0) 
         np.asarray(self.zeroMNMulclt).fill(0)
 
-        self.isBefrAssn = False # it indicates whether self.zeroMNMulclt has been assigned before
+        self.isBefrAssn = False # It indicates whether self.zeroMNMulclt has been assigned before.
 
 
 
-        self.lastTermInr = 1 #It increases self.lastSeriestermPos by 1
-        self.lastSeriestermPos = self.orderDegz-1 #last series term position in self.soluM. At first it is equal to order of diff. equ.
+        self.lastTermInr = 1 # It increases self.lastSeriestermPos by 1.
+        self.lastSeriestermPos = self.orderDegz-1 # Last series term position in self.soluM. At first it is equal to order of diff. equ.
         while self.lastTermInr<self.N:        
-            for self.j in range(self.DEtoArrayLLen): # cal. are performed in summation term
-                for self.k in range(self.DEtoArrayLtermLen): # cal. are performed in a product term
-                    if(self.k==0 and self.DEtoArrayL[self.j][self.k]!=0): # constant in product term 
-                        if(np.asarray(self.DEtoArrayL[self.j][2:]).sum()!=0): # from 2 as dpndt var must be present
+            for self.j in range(self.DEtoArrayLLen): # Calculations are performed in summation term.
+                for self.k in range(self.DEtoArrayLtermLen): # Calculations are performed in a product term.
+                    if(self.k==0 and self.DEtoArrayL[self.j][self.k]!=0): # Constant in product term.
+                        if(np.asarray(self.DEtoArrayL[self.j][2:]).sum()!=0): # From position index 2 as dpndt var must be present.
                             self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = self.DEtoArrayL[self.j][self.k]
                             self.isBefrAssn = True
                         elif(self.lastSeriestermPos == self.orderDegz-1
-                            and np.asarray(self.DEtoArrayL[self.j][1:]).sum()==0):# one time derivation during running of the loop
+                            and np.asarray(self.DEtoArrayL[self.j][1:]).sum()==0): # One time derivation during running of the loop.
                             self.zeroMNMulclt[0] = self.DEtoArrayL[self.j][self.k]
                             self.isBefrAssn = True
                         else:
                             continue
 
-                    elif(self.k==1 and self.DEtoArrayL[self.j][self.k]!=0): # only indpnd^n in product term
+                    elif(self.k==1 and self.DEtoArrayL[self.j][self.k]!=0): # Only indpnd^n in product term.
                         if( np.asarray(self.DEtoArrayL[self.j][2:]).sum()==0 and 
-                           self.lastSeriestermPos == self.DEtoArrayL[self.j][self.k]+self.orderDegz-1):# one time calculation for polynomial terms  already 
-                                                                                # present in input diff. equ. during running of the loop
-                            if(self.DEtoArrayL[self.j][0]==0): # checself.king nonzero number at self.DEtoArrayL[self.j][0]
-                                self.zeroMNMulclt[int(self.DEtoArrayL[self.j][self.k])] = float(1) # coefficient is 1
+                           self.lastSeriestermPos == self.DEtoArrayL[self.j][self.k]+self.orderDegz-1):# One time calculation for 
+                                                                                                       # polynomial terms  already 
+                                                                                                       # present in input diff. equ. during 
+                                                                                                       # running of the loop.
+                            if(self.DEtoArrayL[self.j][0]==0): # Checking nonzero number at self.DEtoArrayL[self.j][0].
+                                self.zeroMNMulclt[int(self.DEtoArrayL[self.j][self.k])] = float(1) # Coefficient is 1.
                             else:
-                                self.zeroMNMulclt[int(self.DEtoArrayL[self.j][self.k])] = self.DEtoArrayL[self.j][0] # coefficient is of self.DEtoArrayL[self.j][0]
+                                self.zeroMNMulclt[int(self.DEtoArrayL[self.j][self.k])] = self.DEtoArrayL[self.j][0] # Coefficient of self.DEtoArrayL[self.j][0].
                             self.isBefrAssn = True
 
-                    elif(self.k==2 and self.DEtoArrayL[self.j][self.k]!=0): # dpnd in product term
+                    elif(self.k==2 and self.DEtoArrayL[self.j][self.k]!=0): # dpnd in product term.
                         if(not self.isBefrAssn):
                             if(self.DEtoArrayL[self.j][1]==0):
                                 self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = self.soluM[self.lastSeriestermPos-self.orderDegz+1]
@@ -125,19 +128,19 @@ cdef class adomianMat:
                                 self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = np.roll(self.soluM, int(self.DEtoArrayL[self.j][1]))[self.lastSeriestermPos-self.orderDegz+1]
                             self.isBefrAssn = True
                         else:
-                            if(self.DEtoArrayL[self.j][1]==0): # dpndnd and indpnd^n in product term
+                            if(self.DEtoArrayL[self.j][1]==0): # dpndnd and indpnd^n in product term.
                                 self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = (self.soluM[self.lastSeriestermPos-self.orderDegz+1]
                                                                                 *self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1])
                             else:
                                 self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = (np.roll(self.soluM, int(self.DEtoArrayL[self.j][1]))[self.lastSeriestermPos-self.orderDegz+1]
                                                                                 *self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1])
 
-                    elif(self.k>2 and self.DEtoArrayL[self.j][self.k]!=0): # higher order derivative terms
+                    elif(self.k>2 and self.DEtoArrayL[self.j][self.k]!=0): # Higher order derivative terms.
                         if(not self.isBefrAssn):
                             self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = self.doDerivM(self.soluM, self.k-2)[self.lastSeriestermPos-self.orderDegz+1]
                             self.isBefrAssn = True
                         else:
-                            if(self.DEtoArrayL[self.j][1]==0): # dpndnd and indpnd^n in product term
+                            if(self.DEtoArrayL[self.j][1]==0): # dpndnd and indpnd^n in product term.
                                 self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = (self.doDerivM(self.soluM, self.k-2)[self.lastSeriestermPos-self.orderDegz+1]
                                                                                 *self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1])
                             else:
@@ -148,16 +151,16 @@ cdef class adomianMat:
                         continue
       
                 if(self.DEtoArrayLLen):
-                    self.zeroMNAddclt = np.add(self.zeroMNMulclt, self.zeroMNAddclt) # adding production terms in addition collector
-                    np.asarray(self.zeroMNMulclt).fill(0) # clearing production collector
+                    self.zeroMNAddclt = np.add(self.zeroMNMulclt, self.zeroMNAddclt) # Adding production terms in addition collector.
+                    np.asarray(self.zeroMNMulclt).fill(0) # Clearing production collector.
                     self.isBefrAssn = False
 
 
-            # Calculating series terms from nonlinear part (self.DEtoArrayNL) in r.h.s. (We need to calculate Adomian Matrix)
+            ## Calculating series terms from nonlinear part (self.DEtoArrayNL) in r.h.s. (We need to calculate Adomian Matrix) ##
             self.lastCalTerm = self.lastSeriestermPos-self.orderDegz+1
-            for self.j in range(self.DEtoArrayNLLen): # cal. are performed in summation term
-                for self.k in range(self.DEtoArrayLtermLen-1, -1, -1): # cal. are performed in a product term
-                    if(self.k==0 and self.DEtoArrayNL[self.j][self.k]!=0): # constant in product term 
+            for self.j in range(self.DEtoArrayNLLen): # Calculations are performed in summation term.
+                for self.k in range(self.DEtoArrayLtermLen-1, -1, -1): # Calculations are performed in a product term.
+                    if(self.k==0 and self.DEtoArrayNL[self.j][self.k]!=0): # Constant in product term. 
                         if(not self.isBefrAssn):
                             self.zeroMNMulclt[self.lastSeriestermPos-self.orderDegz+1] = self.DEtoArrayNL[self.j][self.k]
                             self.isBefrAssn = True
@@ -171,8 +174,10 @@ cdef class adomianMat:
                             if(self.DEtoArrayNL[self.j][1]==0):
                                 self.zeroMNMulclt[self.lastCalTerm] = np.multiply(self.soluM[:self.lastCalTerm+1], np.flip(self.zeroMNMulclt[:self.lastCalTerm+1])).sum()
                             else:
-                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): #self.lastCalTerm is the power of last term. If it is smaller than
-                                    self.zeroMNMulclt[self.lastCalTerm] = 0  # self.DEtoArrayNL[self.j][1], it is assined to zero.
+                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): # self.lastCalTerm is the power of last term. 
+                                                                                  # If it is smaller than
+                                    self.zeroMNMulclt[self.lastCalTerm] = 0       # self.DEtoArrayNL[self.j][1], element at it is assined 
+                                                                                  # to zero.
                                 else:
                                     self.soluMroll = np.roll(self.soluM, int(self.DEtoArrayNL[self.j][1]))
                                     self.soluMroll[:int(self.DEtoArrayNL[self.j][1])] = 0
@@ -186,8 +191,10 @@ cdef class adomianMat:
                                 if(self.DEtoArrayNL[self.j][1]==0):
                                     self.zeroMNMulclt[self.lastCalTerm] = np.multiply(self.soluM[:self.lastCalTerm+1], np.flip(self.zeroMNMulclt[:self.lastCalTerm+1])).sum()
                                 else:
-                                    if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): #self.lastCalTerm is the power of last term. If it is smaller than
-                                        self.zeroMNMulclt[self.lastCalTerm] = 0  # self.DEtoArrayNL[self.j][1], it is assined to zero.
+                                    if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): # self.lastCalTerm is the power of last term. 
+                                                                                      # If it is smaller than
+                                        self.zeroMNMulclt[self.lastCalTerm] = 0       # self.DEtoArrayNL[self.j][1], element at it
+                                                                                      # is assined to zero.
                                     else:
                                         self.soluMroll = np.roll(self.soluM, int(self.DEtoArrayNL[self.j][1]))
                                         self.soluMroll[:int(self.DEtoArrayNL[self.j][1])] = 0
@@ -201,8 +208,10 @@ cdef class adomianMat:
                                 if(self.DEtoArrayNL[self.j][1]==0):
                                     self.zeroMNMulclt[self.lastCalTerm] = np.multiply(self.soluM[:self.lastCalTerm+1], np.flip(self.zeroMNMulclt[:self.lastCalTerm+1])).sum()
                                 else:
-                                    if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): #self.lastCalTerm is the power of last term. If it is smaller than
-                                        self.zeroMNMulclt[self.lastCalTerm] = 0  # self.DEtoArrayNL[self.j][1], it is assined to zero.
+                                    if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): # self.lastCalTerm is the power of last term. 
+                                                                                      # If it is smaller than
+                                        self.zeroMNMulclt[self.lastCalTerm] = 0       # self.DEtoArrayNL[self.j][1], element at it is
+                                                                                      # assined to zero.
                                     else:
                                         self.soluMroll = np.roll(self.soluM, int(self.DEtoArrayNL[self.j][1]))
                                         self.soluMroll[:int(self.DEtoArrayNL[self.j][1])] = 0
@@ -213,7 +222,7 @@ cdef class adomianMat:
                                     self.zeroMNMulclt[:self.lastCalTerm] = 0
 
 
-                    elif(self.k>2 and self.DEtoArrayNL[self.j][self.k]!=0): # higher order derivative terms 
+                    elif(self.k>2 and self.DEtoArrayNL[self.j][self.k]!=0): # Higher order derivative terms. 
                         np.asarray(self.emptyNDM).fill(0)
                         self.emptyNDM[:self.lastCalTerm+1] = (self.doDerivM(self.soluM, self.k-2)[:self.lastCalTerm+1])
                         if(not self.isBefrAssn and np.asarray(self.DEtoArrayNL[self.j][2:self.k]).sum()!=0):
@@ -228,8 +237,10 @@ cdef class adomianMat:
                             if(self.DEtoArrayNL[self.j][1]==0):
                                 self.zeroMNMulclt[self.lastCalTerm] = np.multiply(self.emptyNDM[:self.lastCalTerm+1], np.flip(self.zeroMNMulclt[:self.lastCalTerm+1])).sum()
                             else:
-                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): #self.lastCalTerm is the power of last term. If it is smaller than
-                                    self.zeroMNMulclt[self.lastCalTerm] = 0  # self.DEtoArrayNL[self.j][1], it is assined to zero.
+                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): # self.lastCalTerm is the power of last term. 
+                                                                                  # If it is smaller than
+                                    self.zeroMNMulclt[self.lastCalTerm] = 0       # self.DEtoArrayNL[self.j][1], element at it is assined 
+                                                                                  # to zero.
                                 else:
                                     self.soluMroll = np.roll(self.emptyNDM, int(self.DEtoArrayNL[self.j][1]))
                                     self.soluMroll[:int(self.DEtoArrayNL[self.j][1])] = 0
@@ -252,8 +263,10 @@ cdef class adomianMat:
                             if(self.DEtoArrayNL[self.j][1]==0):
                                 self.zeroMNMulclt[self.lastCalTerm] = np.multiply(self.emptyNDM[:self.lastCalTerm+1], np.flip(self.zeroMNMulclt[:self.lastCalTerm+1])).sum()
                             else:
-                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): #self.lastCalTerm is the power of last term. If it is smaller than
-                                    self.zeroMNMulclt[self.lastCalTerm] = 0  # self.DEtoArrayNL[self.j][1], it is assined to zero.
+                                if(self.lastCalTerm<self.DEtoArrayNL[self.j][1]): # self.lastCalTerm is the power of last term. 
+                                                                                  # If it is smaller than
+                                    self.zeroMNMulclt[self.lastCalTerm] = 0       # self.DEtoArrayNL[self.j][1], element at it is assined
+                                                                                  # to zero.
                                 else: 
                                     self.soluMroll = np.roll(self.emptyNDM, int(self.DEtoArrayNL[self.j][1]))
                                     self.soluMroll[:int(self.DEtoArrayNL[self.j][1])] = 0
@@ -268,15 +281,63 @@ cdef class adomianMat:
 
                 if(self.DEtoArrayNLLen):
                     self.zeroMNMulclt[self.lastCalTerm+1:] = 0
-                    self.zeroMNAddclt = np.add(self.zeroMNMulclt, self.zeroMNAddclt) # adding production terms in addition collector
-                    np.asarray(self.zeroMNMulclt).fill(0) # clearing production collector    
+                    self.zeroMNAddclt = np.add(self.zeroMNMulclt, self.zeroMNAddclt) # Adding production terms in addition collector.
+                    np.asarray(self.zeroMNMulclt).fill(0) # Clearing production collector.    
                     self.isBefrAssn = False
 
 
-            self.soluM = np.add(self.soluM, self.doIntegM(self.zeroMNAddclt,self.iniCondLen)) # final result is collected in self.soluM
-            np.asarray(self.zeroMNAddclt).fill(0) # clearing summation collector
-            self.lastSeriestermPos = self.orderDegz-1 + self.lastTermInr# after one term cal. last pos. in self.soluM is increased by 1
-            self.lastTermInr += 1 # to inrease last pos. in self.soluM 
+            self.soluM = np.add(self.soluM, self.doIntegM(self.zeroMNAddclt,self.iniCondLen)) # Finally, power series solution is collected
+                                                                                              # in self.soluM.
+            np.asarray(self.zeroMNAddclt).fill(0) # Clearing summation collector.
+            self.lastSeriestermPos = self.orderDegz-1 + self.lastTermInr # After one term cal. last pos. in self.soluM is increased by 1.
+            self.lastTermInr += 1 # It inreases last term position in self.soluM. 
             
     def solution(self):
         return np.asarray(self.soluM)
+
+    "Squared residual error function R."
+    def squaredResidual(self, x, solu):
+
+        sumTerm = 0
+
+        ## Linear matrix ##
+        for i in range(self.DEtoArrayLLen):
+            prdctTerm = 1
+            for j in range(self.DEtoArrayLtermLen):
+                if j == 0:
+                    prdctTerm = prdctTerm*self.DEtoArrayL[i][j]
+                elif j == 1:
+                    prdctTerm = prdctTerm*(x**self.DEtoArrayL[i][j])
+                elif j == 2:
+                    prdctTerm = prdctTerm*(nppoly.polyval(x,solu)**self.DEtoArrayL[i][j])
+                elif j > 2:
+                    prdctTerm = prdctTerm*(nppoly.polyval(x,self.doDerivM(solu,j-2))**self.DEtoArrayL[i][j])
+            sumTerm = sumTerm + prdctTerm
+
+        ## Nonlinear matrix ##
+        for i in range(self.DEtoArrayNLLen):
+            prdctTerm = 1
+            for j in range(self.DEtoArrayLtermLen):
+                if j == 0:
+                    prdctTerm = prdctTerm*self.DEtoArrayNL[i][j]
+                elif j == 1:
+                    prdctTerm = prdctTerm*(x**self.DEtoArrayNL[i][j])
+                elif j == 2:
+                    prdctTerm = prdctTerm*(nppoly.polyval(x,solu)**self.DEtoArrayNL[i][j])
+                elif j > 2:
+                    prdctTerm = prdctTerm*(nppoly.polyval(x,self.doDerivM(solu,j-2))**self.DEtoArrayNL[i][j])
+            sumTerm = sumTerm + prdctTerm
+
+        sumTerm = nppoly.polyval(x,self.doDerivM(solu,self.orderDegz)) - sumTerm
+
+        return sumTerm**2
+
+    "This method tests convergence of self.soluM."
+    def convergenceTest(self, convergenceInterval):
+        try:
+            R = quad(self.squaredResidual, convergenceInterval[0], convergenceInterval[1], args=(self.soluM,))
+            return True,R[0]
+        except Exception as er:
+            return False,er
+
+        

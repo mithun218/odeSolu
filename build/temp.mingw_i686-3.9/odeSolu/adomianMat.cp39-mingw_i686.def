@@ -1,0 +1,3 @@
+LIBRARY adomianMat.cp39-mingw_i686.pyd
+EXPORTS
+PyInit_adomianMat
