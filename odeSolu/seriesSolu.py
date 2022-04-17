@@ -1,8 +1,11 @@
 import numpy as np
 from sympy import *
 from odeSolu.adomianMat import adomianMat
+import time
 
 def seriesSolu(_inputDE,_idpdDpdVar,_iniCond,_N, convergenceInterval=()):
+    startTime = time.time()
+
     inputDE = expand(_inputDE)
     idpdDpdVar = _idpdDpdVar
     iniCond = _iniCond # This is the initial conditions.
@@ -252,7 +255,9 @@ def seriesSolu(_inputDE,_idpdDpdVar,_iniCond,_N, convergenceInterval=()):
                 soluM,DEtoArrayL,DEtoArrayNL)
 
     mat.seriesTerms()
+    endTime = time.time()
     print('Successfully solved.')
+    print("Time: ",endTime-startTime, "second")
 
     if len(convergenceInterval) == 2:
             Res = mat.convergenceTest(convergenceInterval)
