@@ -1,4 +1,4 @@
-# This is a collections of examples to demonstrate how to use odeSolu to plot the series solution
+# This is a collection of examples to demonstrate how to use odeSolu to plot the series solution
 # with convergence test.
 
 import odeSolu as os

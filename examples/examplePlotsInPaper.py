@@ -1,4 +1,4 @@
-# This is a collections of examples that have been used in the papers to compare the series solutions
+# This is a collection of examples that have been used in the papers to compare the series solutions
 # with numerical solutions.
 
 import odeSolu as os

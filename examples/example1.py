@@ -1,4 +1,4 @@
-# This is a collections of examples to demonstrate how to use odeSolu, and write the series solutions in the text files.
+# This is a collection of examples to demonstrate how to use odeSolu, and write the series solutions in the text files.
 
 import odeSolu as os
 from sympy import symbols,Function,diff
