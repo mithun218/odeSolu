@@ -20,11 +20,11 @@ from scipy.integrate import odeint
 x=symbols('x')
 u=Function('u')
 
-ode=diff(u(x),x,1)+(10**(-2))*u(x)-(1/10)*u(x)**3
+ode=diff(u(x),x,1)-0.1*u(x)**3+0.001*u(x)
 T3=300
-U=5
+U=4.7
 
-solu3=os.seriesSolu(ode,(x,u(x)),((u(x), 1),),T3, (0,5))
+solu3=os.seriesSolu(ode,(x,u(x)),((u(x), 1),),T3, (0,U))
 
 x3=np.linspace(0,U,T3)
 
