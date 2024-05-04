@@ -1,6 +1,7 @@
 --------------------------------------------
 ---------------------------------------------
 # odeSolu                                                                                                  
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 #### odeSolu is a Python package that determines power series solution of nonlinear ODE.  #
 --------------
 ---------------
