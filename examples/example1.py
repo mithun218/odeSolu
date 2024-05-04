@@ -2,7 +2,7 @@
 
 import odeSolu as os
 from sympy import symbols,Function,diff
-
+import numpy as np
 
 ######## Example 1 (Bernoulli equation) ##################
 x = symbols('x')
