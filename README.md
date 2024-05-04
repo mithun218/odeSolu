@@ -1,8 +1,9 @@
 --------------------------------------------
+---------------------------------------------
 # odeSolu                                                                                                  
-### odeSolu is a Python package that determines power series solution of nonlinear ODE.  #
-___________
------------
+#### odeSolu is a Python package that determines power series solution of nonlinear ODE.  #
+--------------
+---------------
 
 ## Short usage:
 An ODE is solved by the following principle method *seriesSolu* of the package *odeSolu*
