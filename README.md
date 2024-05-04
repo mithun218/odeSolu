@@ -8,7 +8,7 @@
 
 ## Short usage:
 An ODE is solved by the following principle method *seriesSolu* of the package *odeSolu*
-```puthon
+```python
 	solu = seriesSolu(ode,(dependent,independent),(iniCond1,iniCond2,....),n, (a,b))
 ```
 Here *ode* is the input ODE, dependent and independent variables of the ODE are provided in the second argument, the initial conditions are given in the third argument, and in the fourth argument *n* represents the number of series terms. 
@@ -47,12 +47,12 @@ To plot the series solution, we have used the plotting library **matplotlib**. I
  
 ## External packages: 
 odeSolu version 1.0.5 uses the following external packages:
- 1. NumPy>=1.14.5
+
+ 1. Cython
  2. SymPy>=1.0.0
- 3. SciPy>=1.0.0
- 4. Cython 
+ 3. NumPy>=1.14.5
+ 4. SciPy>=1.0.0
  5. matplotlib (for plottings)
- 6. 
 ## Installation:
 
  **odeSolu only supports Python >= 3.8**
