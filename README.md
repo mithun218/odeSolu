@@ -97,3 +97,10 @@ To run the example1.py we need the packages odeSolu and SymPy. example2.py shows
     seriesSolu.py       : Implementation of the module seriesSolu. It calculates the series solution and the global squared 
                           residual error (for convergence test) using adomianMat module.
     adomianMat.pyx      : Implementation of the module adomianMat. This Cython source code finds Adomian polynomials.
+
+## Citation:
+
+If you see this package is helpfull for your project then please cite the following article 
+
+SERIES SOLUTION OF ORDINARY DIFFERENTIAL EQUATION USING A MODIFIED VERSION OF THE ADOMIAN DECOMPOSITION METHOD, M. Bairagi, South East Asian Journal of Mathematics & Mathematical Sciences 20 (1), 2024
+https://doi.org/10.56827/SEAJMMS.2024.2001.11
